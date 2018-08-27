@@ -33,27 +33,28 @@ module.exports = {
   version: require("./lib/version")
 };
 
-},{"./lib/debug":6,"./lib/graphlib":7,"./lib/layout":9,"./lib/util":29,"./lib/version":30}],2:[function(require,module,exports){
+},{"./lib/debug":6,"./lib/graphlib":7,"./lib/layout":9,"./lib/util":28,"./lib/version":29}],2:[function(require,module,exports){
 "use strict";
 
-var _ = require("./lodash"),
-    greedyFAS = require("./greedy-fas");
+var greedyFAS = require("./greedy-fas");
 
 module.exports = {
   run: run,
   undo: undo
 };
 
+var idCounter = 100;
+
 function run(g) {
   var fas = (g.graph().acyclicer === "greedy"
                 ? greedyFAS(g, weightFn(g))
                 : dfsFAS(g));
-  _.forEach(fas, function(e) {
+  fas.forEach(function(e) {
     var label = g.edge(e);
     g.removeEdge(e);
     label.forwardName = e.name;
     label.reversed = true;
-    g.setEdge(e.w, e.v, label, _.uniqueId("rev"));
+    g.setEdge(e.w, e.v, label, "rev" + (idCounter++));
   });
 
   function weightFn(g) {
@@ -69,13 +70,13 @@ function dfsFAS(g) {
       visited = {};
 
   function dfs(v) {
-    if (_.has(visited, v)) {
+    if (visited.hasOwnProperty(v)) {
       return;
     }
     visited[v] = true;
     stack[v] = true;
-    _.forEach(g.outEdges(v), function(e) {
-      if (_.has(stack, e.w)) {
+    g.outEdges(v).forEach(function(e) {
+      if (stack.hasOwnProperty(e.w)) {
         fas.push(e);
       } else {
         dfs(e.w);
@@ -84,12 +85,12 @@ function dfsFAS(g) {
     delete stack[v];
   }
 
-  _.forEach(g.nodes(), dfs);
+  g.nodes().forEach(dfs);
   return fas;
 }
 
 function undo(g) {
-  _.forEach(g.edges(), function(e) {
+  g.edges().forEach(function(e) {
     var label = g.edge(e);
     if (label.reversed) {
       g.removeEdge(e);
@@ -102,9 +103,8 @@ function undo(g) {
   });
 }
 
-},{"./greedy-fas":8,"./lodash":10}],3:[function(require,module,exports){
-var _ = require("./lodash"),
-    util = require("./util");
+},{"./greedy-fas":8}],3:[function(require,module,exports){
+var util = require("./util");
 
 module.exports = addBorderSegments;
 
@@ -113,10 +113,10 @@ function addBorderSegments(g) {
     var children = g.children(v),
         node = g.node(v);
     if (children.length) {
-      _.forEach(children, dfs);
+      children.forEach(dfs);
     }
 
-    if (_.has(node, "minRank")) {
+    if (node.hasOwnProperty("minRank")) {
       node.borderLeft = [];
       node.borderRight = [];
       for (var rank = node.minRank, maxRank = node.maxRank + 1;
@@ -128,7 +128,7 @@ function addBorderSegments(g) {
     }
   }
 
-  _.forEach(g.children(), dfs);
+  g.children().forEach(dfs);
 }
 
 function addBorderNode(g, prop, prefix, sg, sgNode, rank) {
@@ -142,10 +142,8 @@ function addBorderNode(g, prop, prefix, sg, sgNode, rank) {
   }
 }
 
-},{"./lodash":10,"./util":29}],4:[function(require,module,exports){
+},{"./util":28}],4:[function(require,module,exports){
 "use strict";
-
-var _ = require("./lodash");
 
 module.exports = {
   adjust: adjust,
@@ -172,8 +170,8 @@ function undo(g) {
 }
 
 function swapWidthHeight(g) {
-  _.forEach(g.nodes(), function(v) { swapWidthHeightOne(g.node(v)); });
-  _.forEach(g.edges(), function(e) { swapWidthHeightOne(g.edge(e)); });
+  g.nodes().forEach(function(v) { swapWidthHeightOne(g.node(v)); });
+  g.edges().forEach(function(e) { swapWidthHeightOne(g.edge(e)); });
 }
 
 function swapWidthHeightOne(attrs) {
@@ -183,12 +181,12 @@ function swapWidthHeightOne(attrs) {
 }
 
 function reverseY(g) {
-  _.forEach(g.nodes(), function(v) { reverseYOne(g.node(v)); });
+  g.nodes().forEach(function(v) { reverseYOne(g.node(v)); });
 
-  _.forEach(g.edges(), function(e) {
+  g.edges().forEach(function(e) {
     var edge = g.edge(e);
-    _.forEach(edge.points, reverseYOne);
-    if (_.has(edge, "y")) {
+    if (edge.hasOwnProperty("points")) edge.points.forEach(reverseYOne);
+    if (edge.hasOwnProperty("y")) {
       reverseYOne(edge);
     }
   });
@@ -199,12 +197,12 @@ function reverseYOne(attrs) {
 }
 
 function swapXY(g) {
-  _.forEach(g.nodes(), function(v) { swapXYOne(g.node(v)); });
+  g.nodes().forEach(function(v) { swapXYOne(g.node(v)); });
 
-  _.forEach(g.edges(), function(e) {
+  g.edges().forEach(function(e) {
     var edge = g.edge(e);
-    _.forEach(edge.points, swapXYOne);
-    if (_.has(edge, "x")) {
+    if (edge.hasOwnProperty("points")) edge.points.forEach(swapXYOne);
+    if (edge.hasOwnProperty("x")) {
       swapXYOne(edge);
     }
   });
@@ -216,7 +214,7 @@ function swapXYOne(attrs) {
   attrs.y = x;
 }
 
-},{"./lodash":10}],5:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 /*
  * Simple doubly linked list implementation derived from Cormen, et al.,
  * "Introduction to Algorithms".
@@ -275,8 +273,7 @@ function filterOutLinks(k, v) {
 }
 
 },{}],6:[function(require,module,exports){
-var _ = require("./lodash"),
-    util = require("./util"),
+var util = require("./util"),
     Graph = require("./graphlib").Graph;
 
 module.exports = {
@@ -289,28 +286,37 @@ function debugOrdering(g) {
 
   var h = new Graph({ compound: true, multigraph: true }).setGraph({});
 
-  _.forEach(g.nodes(), function(v) {
+  g.nodes().forEach(function(v) {
     h.setNode(v, { label: v });
     h.setParent(v, "layer" + g.node(v).rank);
   });
 
-  _.forEach(g.edges(), function(e) {
+  g.edges().forEach(function(e) {
     h.setEdge(e.v, e.w, {}, e.name);
   });
 
-  _.forEach(layerMatrix, function(layer, i) {
+  layerMatrix.forEach(function(layer, i) {
     var layerV = "layer" + i;
     h.setNode(layerV, { rank: "same" });
-    _.reduce(layer, function(u, v) {
+    layer.forEach(function(v, idx) {
+      if (idx === 0) return;
+      var u = layer[idx - 1];
       h.setEdge(u, v, { style: "invis" });
-      return v;
     });
+    /**
+     * This is really a loop taking advantage that if an accumulator isn't
+     * given, the accumulator is set to the first item
+     **/
+    // layer.reduce(function(u, v) {
+    //   h.setEdge(u, v, { style: "invis" });
+    //   return v;
+    // });
   });
 
   return h;
 }
 
-},{"./graphlib":7,"./lodash":10,"./util":29}],7:[function(require,module,exports){
+},{"./graphlib":7,"./util":28}],7:[function(require,module,exports){
 /* global window */
 
 var graphlib;
@@ -328,8 +334,7 @@ if (!graphlib) {
 module.exports = graphlib;
 
 },{"graphlib":undefined}],8:[function(require,module,exports){
-var _ = require("./lodash"),
-    Graph = require("./graphlib").Graph,
+var Graph = require("./graphlib").Graph,
     List = require("./data/list");
 
 /*
@@ -341,7 +346,8 @@ var _ = require("./lodash"),
  */
 module.exports = greedyFAS;
 
-var DEFAULT_WEIGHT_FN = _.constant(1);
+// var DEFAULT_WEIGHT_FN = _.constant(1);
+var DEFAULT_WEIGHT_FN = function () { return 1; };
 
 function greedyFAS(g, weightFn) {
   if (g.nodeCount() <= 1) {
@@ -351,9 +357,11 @@ function greedyFAS(g, weightFn) {
   var results = doGreedyFAS(state.graph, state.buckets, state.zeroIdx);
 
   // Expand multi-edges
-  return _.flatten(_.map(results, function(e) {
+  return results.map(function(e) {
     return g.outEdges(e.v, e.w);
-  }), true);
+  }).reduce(function(r, e) {
+    return r.concat(e);
+  }, []);
 }
 
 function doGreedyFAS(g, buckets, zeroIdx) {
@@ -382,7 +390,7 @@ function doGreedyFAS(g, buckets, zeroIdx) {
 function removeNode(g, buckets, zeroIdx, entry, collectPredecessors) {
   var results = collectPredecessors ? [] : undefined;
 
-  _.forEach(g.inEdges(entry.v), function(edge) {
+  g.inEdges(entry.v).forEach(function(edge) {
     var weight = g.edge(edge),
         uEntry = g.node(edge.v);
 
@@ -394,7 +402,7 @@ function removeNode(g, buckets, zeroIdx, entry, collectPredecessors) {
     assignBucket(buckets, zeroIdx, uEntry);
   });
 
-  _.forEach(g.outEdges(entry.v), function(edge) {
+  g.outEdges(entry.v).forEach(function(edge) {
     var weight = g.edge(edge),
         w = edge.w,
         wEntry = g.node(w);
@@ -412,13 +420,13 @@ function buildState(g, weightFn) {
       maxIn = 0,
       maxOut = 0;
 
-  _.forEach(g.nodes(), function(v) {
+  g.nodes().forEach(function(v) {
     fasGraph.setNode(v, { v: v, "in": 0, out: 0 });
   });
 
   // Aggregate weights on nodes, but also sum the weights across multi-edges
   // into a single edge for the fasGraph.
-  _.forEach(g.edges(), function(e) {
+  g.edges().forEach(function(e) {
     var prevWeight = fasGraph.edge(e.v, e.w) || 0,
         weight = weightFn(e),
         edgeWeight = prevWeight + weight;
@@ -427,10 +435,10 @@ function buildState(g, weightFn) {
     maxIn  = Math.max(maxIn,  fasGraph.node(e.w)["in"]  += weight);
   });
 
-  var buckets = _.range(maxOut + maxIn + 3).map(function() { return new List(); });
+  var buckets = Array.apply(0, Array(maxOut + maxIn + 3)).map(function() { return new List(); });
   var zeroIdx = maxIn + 1;
 
-  _.forEach(fasGraph.nodes(), function(v) {
+  fasGraph.nodes().forEach(function(v) {
     assignBucket(buckets, zeroIdx, fasGraph.node(v));
   });
 
@@ -447,11 +455,10 @@ function assignBucket(buckets, zeroIdx, entry) {
   }
 }
 
-},{"./data/list":5,"./graphlib":7,"./lodash":10}],9:[function(require,module,exports){
+},{"./data/list":5,"./graphlib":7}],9:[function(require,module,exports){
 "use strict";
 
-var _ = require("./lodash"),
-    acyclic = require("./acyclic"),
+var acyclic = require("./acyclic"),
     normalize = require("./normalize"),
     rank = require("./rank"),
     normalizeRanks = require("./util").normalizeRanks,
@@ -514,7 +521,7 @@ function runLayout(g, time) {
  * attributes can influence layout.
  */
 function updateInputGraph(inputGraph, layoutGraph) {
-  _.forEach(inputGraph.nodes(), function(v) {
+  inputGraph.nodes().forEach(function(v) {
     var inputLabel = inputGraph.node(v),
         layoutLabel = layoutGraph.node(v);
 
@@ -529,12 +536,12 @@ function updateInputGraph(inputGraph, layoutGraph) {
     }
   });
 
-  _.forEach(inputGraph.edges(), function(e) {
+  inputGraph.edges().forEach(function(e) {
     var inputLabel = inputGraph.edge(e),
         layoutLabel = layoutGraph.edge(e);
 
     inputLabel.points = layoutLabel.points;
-    if (_.has(layoutLabel, "x")) {
+    if (layoutLabel.hasOwnProperty("x")) {
       inputLabel.x = layoutLabel.x;
       inputLabel.y = layoutLabel.y;
     }
@@ -566,23 +573,40 @@ function buildLayoutGraph(inputGraph) {
   var g = new Graph({ multigraph: true, compound: true }),
       graph = canonicalize(inputGraph.graph());
 
-  g.setGraph(_.merge({},
+  g.setGraph([
     graphDefaults,
     selectNumberAttrs(graph, graphNumAttrs),
-    _.pick(graph, graphAttrs)));
+    graphAttrs.reduce(function(r, k) { if (graph[k]) { r[k] = graph[k]; } return r; }, {})
+  ].reduce(function(r, o) {
+    Object.keys(o).forEach(function(k) {
+      r[k] = o[k];
+    });
+    return r;
+  }, {}));
 
-  _.forEach(inputGraph.nodes(), function(v) {
+  inputGraph.nodes().forEach(function(v) {
     var node = canonicalize(inputGraph.node(v));
-    g.setNode(v, _.defaults(selectNumberAttrs(node, nodeNumAttrs), nodeDefaults));
+    var nodeProps = Object.keys(nodeDefaults).reduce(function(r, k) {
+      if (!r.hasOwnProperty(k)) r[k] = nodeDefaults[k];
+      return r;
+    }, selectNumberAttrs(node, nodeNumAttrs));
+    g.setNode(v, nodeProps);
+      // g.setNode(v, _.defaults(selectNumberAttrs(node, nodeNumAttrs), nodeDefaults));
     g.setParent(v, inputGraph.parent(v));
   });
 
-  _.forEach(inputGraph.edges(), function(e) {
+  inputGraph.edges().forEach(function(e) {
     var edge = canonicalize(inputGraph.edge(e));
-    g.setEdge(e, _.merge({},
+    g.setEdge(e, [
       edgeDefaults,
       selectNumberAttrs(edge, edgeNumAttrs),
-      _.pick(edge, edgeAttrs)));
+      edgeAttrs.reduce(function(r, k) { if (edge[k]) { r[k] = edge[k]; } return r; }, {})
+    ].reduce(function(r, o) {
+      Object.keys(o).forEach(function(k) {
+        r[k] = o[k];
+      });
+      return r;
+    }, {}));
   });
 
   return g;
@@ -599,7 +623,7 @@ function buildLayoutGraph(inputGraph) {
 function makeSpaceForEdgeLabels(g) {
   var graph = g.graph();
   graph.ranksep /= 2;
-  _.forEach(g.edges(), function(e) {
+  g.edges().forEach(function(e) {
     var edge = g.edge(e);
     edge.minlen *= 2;
     if (edge.labelpos.toLowerCase() !== "c") {
@@ -619,7 +643,7 @@ function makeSpaceForEdgeLabels(g) {
  * label's position.
  */
 function injectEdgeLabelProxies(g) {
-  _.forEach(g.edges(), function(e) {
+  g.edges().forEach(function(e) {
     var edge = g.edge(e);
     if (edge.width && edge.height) {
       var v = g.node(e.v),
@@ -632,19 +656,19 @@ function injectEdgeLabelProxies(g) {
 
 function assignRankMinMax(g) {
   var maxRank = 0;
-  _.forEach(g.nodes(), function(v) {
+  g.nodes().forEach(function(v) {
     var node = g.node(v);
     if (node.borderTop) {
       node.minRank = g.node(node.borderTop).rank;
       node.maxRank = g.node(node.borderBottom).rank;
-      maxRank = _.max(maxRank, node.maxRank);
+      maxRank = Math.max(maxRank, node.maxRank);
     }
   });
   g.graph().maxRank = maxRank;
 }
 
 function removeEdgeLabelProxies(g) {
-  _.forEach(g.nodes(), function(v) {
+  g.nodes().forEach(function(v) {
     var node = g.node(v);
     if (node.dummy === "edge-proxy") {
       g.edge(node.e).labelRank = node.rank;
@@ -673,10 +697,10 @@ function translateGraph(g) {
     maxY = Math.max(maxY, y + h / 2);
   }
 
-  _.forEach(g.nodes(), function(v) { getExtremes(g.node(v)); });
-  _.forEach(g.edges(), function(e) {
+  g.nodes().forEach(function(v) { getExtremes(g.node(v)); });
+  g.edges().forEach(function(e) {
     var edge = g.edge(e);
-    if (_.has(edge, "x")) {
+    if (edge.hasOwnProperty("x")) {
       getExtremes(edge);
     }
   });
@@ -684,20 +708,20 @@ function translateGraph(g) {
   minX -= marginX;
   minY -= marginY;
 
-  _.forEach(g.nodes(), function(v) {
+  g.nodes().forEach(function(v) {
     var node = g.node(v);
     node.x -= minX;
     node.y -= minY;
   });
 
-  _.forEach(g.edges(), function(e) {
+  g.edges().forEach(function(e) {
     var edge = g.edge(e);
-    _.forEach(edge.points, function(p) {
+    edge.points.forEach(function(p) {
       p.x -= minX;
       p.y -= minY;
     });
-    if (_.has(edge, "x")) { edge.x -= minX; }
-    if (_.has(edge, "y")) { edge.y -= minY; }
+    if (edge.hasOwnProperty("x")) { edge.x -= minX; }
+    if (edge.hasOwnProperty("y")) { edge.y -= minY; }
   });
 
   graphLabel.width = maxX - minX + marginX;
@@ -705,7 +729,7 @@ function translateGraph(g) {
 }
 
 function assignNodeIntersects(g) {
-  _.forEach(g.edges(), function(e) {
+  g.edges().forEach(function(e) {
     var edge = g.edge(e),
         nodeV = g.node(e.v),
         nodeW = g.node(e.w),
@@ -724,9 +748,9 @@ function assignNodeIntersects(g) {
 }
 
 function fixupEdgeLabelCoords(g) {
-  _.forEach(g.edges(), function(e) {
+  g.edges().forEach(function(e) {
     var edge = g.edge(e);
-    if (_.has(edge, "x")) {
+    if (edge.hasOwnProperty("x")) {
       if (edge.labelpos === "l" || edge.labelpos === "r") {
         edge.width -= edge.labeloffset;
       }
@@ -739,7 +763,7 @@ function fixupEdgeLabelCoords(g) {
 }
 
 function reversePointsForReversedEdges(g) {
-  _.forEach(g.edges(), function(e) {
+  g.edges().forEach(function(e) {
     var edge = g.edge(e);
     if (edge.reversed) {
       edge.points.reverse();
@@ -748,13 +772,13 @@ function reversePointsForReversedEdges(g) {
 }
 
 function removeBorderNodes(g) {
-  _.forEach(g.nodes(), function(v) {
+  g.nodes().forEach(function(v) {
     if (g.children(v).length) {
       var node = g.node(v),
           t = g.node(node.borderTop),
           b = g.node(node.borderBottom),
-          l = g.node(_.last(node.borderLeft)),
-          r = g.node(_.last(node.borderRight));
+          l = g.node(node.borderLeft[node.borderLeft.length - 1]),
+          r = g.node(node.borderRight[node.borderRight.length - 1]);
 
       node.width = Math.abs(r.x - l.x);
       node.height = Math.abs(b.y - t.y);
@@ -763,7 +787,7 @@ function removeBorderNodes(g) {
     }
   });
 
-  _.forEach(g.nodes(), function(v) {
+  g.nodes().forEach(function(v) {
     if (g.node(v).dummy === "border") {
       g.removeNode(v);
     }
@@ -771,7 +795,7 @@ function removeBorderNodes(g) {
 }
 
 function removeSelfEdges(g) {
-  _.forEach(g.edges(), function(e) {
+  g.edges().forEach(function(e) {
     if (e.v === e.w) {
       var node = g.node(e.v);
       if (!node.selfEdges) {
@@ -785,12 +809,12 @@ function removeSelfEdges(g) {
 
 function insertSelfEdges(g) {
   var layers = util.buildLayerMatrix(g);
-  _.forEach(layers, function(layer) {
+  layers.forEach(function(layer) {
     var orderShift = 0;
-    _.forEach(layer, function(v, i) {
+    layer.forEach(function(v, i) {
       var node = g.node(v);
       node.order = i + orderShift;
-      _.forEach(node.selfEdges, function(selfEdge) {
+      if (node.hasOwnProperty("selfEdges")) node.selfEdges.forEach(function(selfEdge) {
         util.addDummyNode(g, "selfedge", {
           width: selfEdge.label.width,
           height: selfEdge.label.height,
@@ -806,7 +830,7 @@ function insertSelfEdges(g) {
 }
 
 function positionSelfEdges(g) {
-  _.forEach(g.nodes(), function(v) {
+  g.nodes().forEach(function(v) {
     var node = g.node(v);
     if (node.dummy === "selfedge") {
       var selfNode = g.node(node.e.v),
@@ -830,64 +854,24 @@ function positionSelfEdges(g) {
 }
 
 function selectNumberAttrs(obj, attrs) {
-  return _.mapValues(_.pick(obj, attrs), Number);
+  return attrs.reduce(function(r, attr) {
+    if (obj.hasOwnProperty(attr)) {
+      r[attr] = Number(obj[attr]);
+    }
+    return r;
+  }, {});
 }
 
 function canonicalize(attrs) {
-  var newAttrs = {};
-  _.forEach(attrs, function(v, k) {
-    newAttrs[k.toLowerCase()] = v;
-  });
-  return newAttrs;
+  if (attrs === undefined) return {};
+  return Object.keys(attrs).reduce(function(obj, k) {
+    obj[k.toLowerCase()] = attrs[k];
+    return obj;
+  }, {});
 }
 
-},{"./acyclic":2,"./add-border-segments":3,"./coordinate-system":4,"./graphlib":7,"./lodash":10,"./nesting-graph":11,"./normalize":12,"./order":17,"./parent-dummy-chains":22,"./position":24,"./rank":26,"./util":29}],10:[function(require,module,exports){
-/* global window */
-
-var lodash;
-
-if (typeof require === "function") {
-  try {
-    lodash = {
-      cloneDeep: require("lodash/cloneDeep"),
-      constant: require("lodash/constant"),
-      defaults: require("lodash/defaults"),
-      each: require("lodash/each"),
-      filter: require("lodash/filter"),
-      find: require("lodash/find"),
-      flatten: require("lodash/flatten"),
-      forEach: require("lodash/forEach"),
-      forIn: require("lodash/forIn"),
-      has:  require("lodash/has"),
-      isUndefined: require("lodash/isUndefined"),
-      last: require("lodash/last"),
-      map: require("lodash/map"),
-      mapValues: require("lodash/mapValues"),
-      max: require("lodash/max"),
-      merge: require("lodash/merge"),
-      min: require("lodash/min"),
-      minBy: require("lodash/minBy"),
-      now: require("lodash/now"),
-      pick: require("lodash/pick"),
-      range: require("lodash/range"),
-      reduce: require("lodash/reduce"),
-      sortBy: require("lodash/sortBy"),
-      uniqueId: require("lodash/uniqueId"),
-      values: require("lodash/values"),
-      zipObject: require("lodash/zipObject"),
-    };
-  } catch (e) {}
-}
-
-if (!lodash) {
-  lodash = window._;
-}
-
-module.exports = lodash;
-
-},{"lodash/cloneDeep":undefined,"lodash/constant":undefined,"lodash/defaults":undefined,"lodash/each":undefined,"lodash/filter":undefined,"lodash/find":undefined,"lodash/flatten":undefined,"lodash/forEach":undefined,"lodash/forIn":undefined,"lodash/has":undefined,"lodash/isUndefined":undefined,"lodash/last":undefined,"lodash/map":undefined,"lodash/mapValues":undefined,"lodash/max":undefined,"lodash/merge":undefined,"lodash/min":undefined,"lodash/minBy":undefined,"lodash/now":undefined,"lodash/pick":undefined,"lodash/range":undefined,"lodash/reduce":undefined,"lodash/sortBy":undefined,"lodash/uniqueId":undefined,"lodash/values":undefined,"lodash/zipObject":undefined}],11:[function(require,module,exports){
-var _ = require("./lodash"),
-    util = require("./util");
+},{"./acyclic":2,"./add-border-segments":3,"./coordinate-system":4,"./graphlib":7,"./nesting-graph":10,"./normalize":11,"./order":16,"./parent-dummy-chains":21,"./position":23,"./rank":25,"./util":28}],10:[function(require,module,exports){
+var util = require("./util");
 
 module.exports = {
   run: run,
@@ -920,19 +904,20 @@ module.exports = {
 function run(g) {
   var root = util.addDummyNode(g, "root", {}, "_root");
   var depths = treeDepths(g);
-  var height = _.max(_.values(depths)) - 1; // Note: depths is an Object not an array
+  var height = Object.keys(depths).map(function(k) { return depths[k]; })
+    .reduce(function(r, v) { return Math.max(r, v); }) - 1;
   var nodeSep = 2 * height + 1;
 
   g.graph().nestingRoot = root;
 
   // Multiply minlen by nodeSep to align nodes on non-border ranks.
-  _.forEach(g.edges(), function(e) { g.edge(e).minlen *= nodeSep; });
+  g.edges().forEach(function(e) { g.edge(e).minlen *= nodeSep; });
 
   // Calculate a weight that is sufficient to keep subgraphs vertically compact
   var weight = sumWeights(g) + 1;
 
   // Create border nodes and link them up
-  _.forEach(g.children(), function(child) {
+  g.children().forEach(function(child) {
     dfs(g, root, nodeSep, weight, height, depths, child);
   });
 
@@ -959,7 +944,7 @@ function dfs(g, root, nodeSep, weight, height, depths, v) {
   g.setParent(bottom, v);
   label.borderBottom = bottom;
 
-  _.forEach(children, function(child) {
+  children.forEach(function(child) {
     dfs(g, root, nodeSep, weight, height, depths, child);
 
     var childNode = g.node(child),
@@ -991,18 +976,18 @@ function treeDepths(g) {
   function dfs(v, depth) {
     var children = g.children(v);
     if (children && children.length) {
-      _.forEach(children, function(child) {
+      children.forEach(function(child) {
         dfs(child, depth + 1);
       });
     }
     depths[v] = depth;
   }
-  _.forEach(g.children(), function(v) { dfs(v, 1); });
+  g.children().forEach(function(v) { dfs(v, 1); });
   return depths;
 }
 
 function sumWeights(g) {
-  return _.reduce(g.edges(), function(acc, e) {
+  return g.edges().reduce(function(acc, e) {
     return acc + g.edge(e).weight;
   }, 0);
 }
@@ -1011,7 +996,7 @@ function cleanup(g) {
   var graphLabel = g.graph();
   g.removeNode(graphLabel.nestingRoot);
   delete graphLabel.nestingRoot;
-  _.forEach(g.edges(), function(e) {
+  g.edges().forEach(function(e) {
     var edge = g.edge(e);
     if (edge.nestingEdge) {
       g.removeEdge(e);
@@ -1019,11 +1004,10 @@ function cleanup(g) {
   });
 }
 
-},{"./lodash":10,"./util":29}],12:[function(require,module,exports){
+},{"./util":28}],11:[function(require,module,exports){
 "use strict";
 
-var _ = require("./lodash"),
-    util = require("./util");
+var util = require("./util");
 
 module.exports = {
   run: run,
@@ -1048,7 +1032,7 @@ module.exports = {
  */
 function run(g) {
   g.graph().dummyChains = [];
-  _.forEach(g.edges(), function(edge) { normalizeEdge(g, edge); });
+  g.edges().forEach(function(edge) { normalizeEdge(g, edge); });
 }
 
 function normalizeEdge(g, e) {
@@ -1090,7 +1074,7 @@ function normalizeEdge(g, e) {
 }
 
 function undo(g) {
-  _.forEach(g.graph().dummyChains, function(v) {
+  g.graph().dummyChains.forEach(function(v) {
     var node = g.node(v),
         origLabel = node.edgeLabel,
         w;
@@ -1111,16 +1095,14 @@ function undo(g) {
   });
 }
 
-},{"./lodash":10,"./util":29}],13:[function(require,module,exports){
-var _ = require("../lodash");
-
+},{"./util":28}],12:[function(require,module,exports){
 module.exports = addSubgraphConstraints;
 
 function addSubgraphConstraints(g, cg, vs) {
   var prev = {},
       rootPrev;
 
-  _.forEach(vs, function(v) {
+  vs.forEach(function(v) {
     var child = g.parent(v),
         parent,
         prevChild;
@@ -1140,44 +1122,19 @@ function addSubgraphConstraints(g, cg, vs) {
       child = parent;
     }
   });
-
-  /*
-  function dfs(v) {
-    var children = v ? g.children(v) : g.children();
-    if (children.length) {
-      var min = Number.POSITIVE_INFINITY,
-          subgraphs = [];
-      _.each(children, function(child) {
-        var childMin = dfs(child);
-        if (g.children(child).length) {
-          subgraphs.push({ v: child, order: childMin });
-        }
-        min = Math.min(min, childMin);
-      });
-      _.reduce(_.sortBy(subgraphs, "order"), function(prev, curr) {
-        cg.setEdge(prev.v, curr.v);
-        return curr;
-      });
-      return min;
-    }
-    return g.node(v).order;
-  }
-  dfs(undefined);
-  */
 }
 
-},{"../lodash":10}],14:[function(require,module,exports){
-var _ = require("../lodash");
-
+},{}],13:[function(require,module,exports){
 module.exports = barycenter;
 
 function barycenter(g, movable) {
-  return _.map(movable, function(v) {
+  if (!movable) return [];
+  return movable.map(function(v) {
     var inV = g.inEdges(v);
     if (!inV.length) {
       return { v: v };
     } else {
-      var result = _.reduce(inV, function(acc, e) {
+      var result = inV.reduce(function(acc, e) {
         var edge = g.edge(e),
             nodeU = g.node(e.v);
         return {
@@ -1196,9 +1153,8 @@ function barycenter(g, movable) {
 }
 
 
-},{"../lodash":10}],15:[function(require,module,exports){
-var _ = require("../lodash"),
-    Graph = require("../graphlib").Graph;
+},{}],14:[function(require,module,exports){
+var Graph = require("../graphlib").Graph;
 
 module.exports = buildLayerGraph;
 
@@ -1237,7 +1193,7 @@ function buildLayerGraph(g, rank, relationship) {
       result = new Graph({ compound: true }).setGraph({ root: root })
                   .setDefaultNodeLabel(function(v) { return g.node(v); });
 
-  _.forEach(g.nodes(), function(v) {
+  g.nodes().forEach(function(v) {
     var node = g.node(v),
         parent = g.parent(v);
 
@@ -1246,14 +1202,14 @@ function buildLayerGraph(g, rank, relationship) {
       result.setParent(v, parent || root);
 
       // This assumes we have only short edges!
-      _.forEach(g[relationship](v), function(e) {
+      g[relationship](v).forEach(function(e) {
         var u = e.v === v ? e.w : e.v,
             edge = result.edge(u, v),
-            weight = !_.isUndefined(edge) ? edge.weight : 0;
+            weight = edge !== undefined ? edge.weight : 0;
         result.setEdge(u, v, { weight: g.edge(e).weight + weight });
       });
 
-      if (_.has(node, "minRank")) {
+      if (node.hasOwnProperty("minRank")) {
         result.setNode(v, {
           borderLeft: node.borderLeft[rank],
           borderRight: node.borderRight[rank]
@@ -1265,16 +1221,15 @@ function buildLayerGraph(g, rank, relationship) {
   return result;
 }
 
+var rootId = 100;
 function createRootNode(g) {
   var v;
-  while (g.hasNode((v = _.uniqueId("_root"))));
+  while (g.hasNode((v = "_root" + rootId++)));
   return v;
 }
 
-},{"../graphlib":7,"../lodash":10}],16:[function(require,module,exports){
+},{"../graphlib":7}],15:[function(require,module,exports){
 "use strict";
-
-var _ = require("../lodash");
 
 module.exports = crossCount;
 
@@ -1306,24 +1261,26 @@ function twoLayerCrossCount(g, northLayer, southLayer) {
   // Sort all of the edges between the north and south layers by their position
   // in the north layer and then the south. Map these edges to the position of
   // their head in the south layer.
-  var southPos = _.zipObject(southLayer,
-                             _.map(southLayer, function (v, i) { return i; }));
-  var southEntries = _.flatten(_.map(northLayer, function(v) {
-    return _.sortBy(_.map(g.outEdges(v), function(e) {
-              return { pos: southPos[e.w], weight: g.edge(e).weight };
-            }), "pos");
-  }), true);
+  var southPos = southLayer.reduce(function(r, v, i) {
+    r[v] = i;
+    return r;
+  }, {});
+  var southEntries = northLayer.map(function(v) {
+    return g.outEdges(v).map(function(e) {
+      return { pos: southPos[e.w], weight: g.edge(e).weight };
+    }).sort(function(a, b) { return a.pos - b.pos; });
+  }).reduce(function(r, e) { return r.concat(e); }, []);
 
   // Build the accumulator tree
   var firstIndex = 1;
   while (firstIndex < southLayer.length) firstIndex <<= 1;
   var treeSize = 2 * firstIndex - 1;
   firstIndex -= 1;
-  var tree = _.map(new Array(treeSize), function() { return 0; });
+  var tree = Array.apply(0, Array(treeSize)).map(function() { return 0; });
 
   // Calculate the weighted crossings
   var cc = 0;
-  _.forEach(southEntries.forEach(function(entry) {
+  southEntries.forEach(function(entry) {
     var index = entry.pos + firstIndex;
     tree[index] += entry.weight;
     var weightSum = 0;
@@ -1335,16 +1292,15 @@ function twoLayerCrossCount(g, northLayer, southLayer) {
       tree[index] += entry.weight;
     }
     cc += entry.weight * weightSum;
-  }));
+  });
 
   return cc;
 }
 
-},{"../lodash":10}],17:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 "use strict";
 
-var _ = require("../lodash"),
-    initOrder = require("./init-order"),
+var initOrder = require("./init-order"),
     crossCount = require("./cross-count"),
     sortSubgraph = require("./sort-subgraph"),
     buildLayerGraph = require("./build-layer-graph"),
@@ -1371,8 +1327,15 @@ module.exports = order;
  */
 function order(g) {
   var maxRank = util.maxRank(g),
-      downLayerGraphs = buildLayerGraphs(g, _.range(1, maxRank + 1), "inEdges"),
-      upLayerGraphs = buildLayerGraphs(g, _.range(maxRank - 1, -1, -1), "outEdges");
+    downLayerGraphs = buildLayerGraphs(g,
+      //  _.range(1, maxRank + 1),
+      Array.apply(0, Array(maxRank)).map(function(v, i) { return i + 1; }),
+      "inEdges"),
+    upLayerGraphs = buildLayerGraphs(g,
+      // _.range(maxRank - 1, -1, -1),
+      Array.apply(0, Array(maxRank)).map(function(v, i) { return maxRank - i - 1; }),
+      "outEdges");
+
 
   var layering = initOrder(g);
   assignOrder(g, layering);
@@ -1387,7 +1350,7 @@ function order(g) {
     var cc = crossCount(g, layering);
     if (cc < bestCC) {
       lastBest = 0;
-      best = _.cloneDeep(layering);
+      best = JSON.parse(JSON.stringify(layering));
       bestCC = cc;
     }
   }
@@ -1396,17 +1359,17 @@ function order(g) {
 }
 
 function buildLayerGraphs(g, ranks, relationship) {
-  return _.map(ranks, function(rank) {
+  return ranks.map(function(rank) {
     return buildLayerGraph(g, rank, relationship);
   });
 }
 
 function sweepLayerGraphs(layerGraphs, biasRight) {
   var cg = new Graph();
-  _.forEach(layerGraphs, function(lg) {
+  layerGraphs.forEach(function(lg) {
     var root = lg.graph().root;
     var sorted = sortSubgraph(lg, root, cg, biasRight);
-    _.forEach(sorted.vs, function(v, i) {
+    sorted.vs.forEach(function(v, i) {
       lg.node(v).order = i;
     });
     addSubgraphConstraints(lg, cg, sorted.vs);
@@ -1414,17 +1377,15 @@ function sweepLayerGraphs(layerGraphs, biasRight) {
 }
 
 function assignOrder(g, layering) {
-  _.forEach(layering, function(layer) {
-    _.forEach(layer, function(v, i) {
+  layering.forEach(function(layer) {
+    layer.forEach(function(v, i) {
       g.node(v).order = i;
     });
   });
 }
 
-},{"../graphlib":7,"../lodash":10,"../util":29,"./add-subgraph-constraints":13,"./build-layer-graph":15,"./cross-count":16,"./init-order":18,"./sort-subgraph":20}],18:[function(require,module,exports){
+},{"../graphlib":7,"../util":28,"./add-subgraph-constraints":12,"./build-layer-graph":14,"./cross-count":15,"./init-order":17,"./sort-subgraph":19}],17:[function(require,module,exports){
 "use strict";
-
-var _ = require("../lodash");
 
 module.exports = initOrder;
 
@@ -1441,30 +1402,31 @@ module.exports = initOrder;
  */
 function initOrder(g) {
   var visited = {},
-      simpleNodes = _.filter(g.nodes(), function(v) {
+      simpleNodes = g.nodes().filter(function(v) {
         return !g.children(v).length;
       }),
-      maxRank = _.max(_.map(simpleNodes, function(v) { return g.node(v).rank; })),
-      layers = _.map(_.range(maxRank + 1), function() { return []; });
+      maxRank = simpleNodes.map(function(v) { return g.node(v).rank; })
+        .reduce(function(r, v) { return Math.max(r, v); }),
+      layers = Array.apply(0, Array(maxRank + 1)).map(function() { return []; });
 
   function dfs(v) {
-    if (_.has(visited, v)) return;
+    if (visited.hasOwnProperty(v)) return;
     visited[v] = true;
     var node = g.node(v);
     layers[node.rank].push(v);
-    _.forEach(g.successors(v), dfs);
+    g.successors(v).forEach(dfs);
   }
 
-  var orderedVs = _.sortBy(simpleNodes, function(v) { return g.node(v).rank; });
-  _.forEach(orderedVs, dfs);
+  var orderedVs = simpleNodes.sort(function(a, b) {
+    return g.node(a).rank - g.node(b).rand;
+  });
+  orderedVs.forEach(dfs);
 
   return layers;
 }
 
-},{"../lodash":10}],19:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 "use strict";
-
-var _ = require("../lodash");
 
 module.exports = resolveConflicts;
 
@@ -1495,7 +1457,7 @@ module.exports = resolveConflicts;
  */
 function resolveConflicts(entries, cg) {
   var mappedEntries = {};
-  _.forEach(entries, function(entry, i) {
+  entries.forEach(function(entry, i) {
     var tmp = mappedEntries[entry.v] = {
       indegree: 0,
       "in": [],
@@ -1503,24 +1465,28 @@ function resolveConflicts(entries, cg) {
       vs: [entry.v],
       i: i
     };
-    if (!_.isUndefined(entry.barycenter)) {
+    if (entry.barycenter !== undefined) {
       tmp.barycenter = entry.barycenter;
       tmp.weight = entry.weight;
     }
   });
 
-  _.forEach(cg.edges(), function(e) {
+  cg.edges().forEach(function(e) {
     var entryV = mappedEntries[e.v],
         entryW = mappedEntries[e.w];
-    if (!_.isUndefined(entryV) && !_.isUndefined(entryW)) {
+    if (entryV !== undefined && entryW !== undefined) {
       entryW.indegree++;
       entryV.out.push(mappedEntries[e.w]);
     }
   });
 
-  var sourceSet = _.filter(mappedEntries, function(entry) {
-    return !entry.indegree;
-  });
+  // console.log(mappedEntries)
+  var sourceSet = Object.keys(mappedEntries).reduce(function(r, k) {
+    if (!mappedEntries[k].indegree) {
+      r.push(mappedEntries[k]);
+    }
+    return r;
+  }, []);
 
   return doResolveConflicts(sourceSet);
 }
@@ -1533,8 +1499,8 @@ function doResolveConflicts(sourceSet) {
       if (uEntry.merged) {
         return;
       }
-      if (_.isUndefined(uEntry.barycenter) ||
-          _.isUndefined(vEntry.barycenter) ||
+      if (uEntry.barycenter === undefined ||
+          vEntry.barycenter === undefined ||
           uEntry.barycenter >= vEntry.barycenter) {
         mergeEntries(vEntry, uEntry);
       }
@@ -1553,14 +1519,22 @@ function doResolveConflicts(sourceSet) {
   while (sourceSet.length) {
     var entry = sourceSet.pop();
     entries.push(entry);
-    _.forEach(entry["in"].reverse(), handleIn(entry));
-    _.forEach(entry.out, handleOut(entry));
+    entry["in"].reverse().forEach(handleIn(entry));
+    entry.out.forEach(handleOut(entry));
   }
 
-  return _.map(_.filter(entries, function(entry) { return !entry.merged; }),
-               function(entry) {
-                 return _.pick(entry, ["vs", "i", "barycenter", "weight"]);
-               });
+  var pickProps = ["vs", "i", "barycenter", "weight"];
+  return entries.filter(function(entry) { return !entry.merged; }).map(
+           function(entry) {
+             // NOTE: we go in this direction rather than iterating ove
+             // pickProps as it preserves order like lodash.pick
+             return Object.keys(entry).reduce(function(r, k) {
+               if (pickProps.indexOf(k) !== -1) {
+                 r[k] = entry[k];
+               }
+               return r;
+             }, {});
+           });
 
 }
 
@@ -1585,9 +1559,8 @@ function mergeEntries(target, source) {
   source.merged = true;
 }
 
-},{"../lodash":10}],20:[function(require,module,exports){
-var _ = require("../lodash"),
-    barycenter = require("./barycenter"),
+},{}],19:[function(require,module,exports){
+var barycenter = require("./barycenter"),
     resolveConflicts = require("./resolve-conflicts"),
     sort = require("./sort");
 
@@ -1601,17 +1574,17 @@ function sortSubgraph(g, v, cg, biasRight) {
       subgraphs = {};
 
   if (bl) {
-    movable = _.filter(movable, function(w) {
+    movable = movable.filter(function(w) {
       return w !== bl && w !== br;
     });
   }
 
   var barycenters = barycenter(g, movable);
-  _.forEach(barycenters, function(entry) {
+  barycenters.forEach(function(entry) {
     if (g.children(entry.v).length) {
       var subgraphResult = sortSubgraph(g, entry.v, cg, biasRight);
       subgraphs[entry.v] = subgraphResult;
-      if (_.has(subgraphResult, "barycenter")) {
+      if (subgraphResult.hasOwnProperty("barycenter")) {
         mergeBarycenters(entry, subgraphResult);
       }
     }
@@ -1623,11 +1596,16 @@ function sortSubgraph(g, v, cg, biasRight) {
   var result = sort(entries, biasRight);
 
   if (bl) {
-    result.vs = _.flatten([bl, result.vs, br], true);
+    result.vs = [bl, result.vs, br].reduce(function(r, e) { return r.concat(e); }, []);
+
+    // }).reduce(function(r, e) {
+    //   return r.concat(e);
+    // }, []);
+
     if (g.predecessors(bl).length) {
       var blPred = g.node(g.predecessors(bl)[0]),
           brPred = g.node(g.predecessors(br)[0]);
-      if (!_.has(result, "barycenter")) {
+      if (!result.hasOwnProperty("barycenter")) {
         result.barycenter = 0;
         result.weight = 0;
       }
@@ -1641,18 +1619,18 @@ function sortSubgraph(g, v, cg, biasRight) {
 }
 
 function expandSubgraphs(entries, subgraphs) {
-  _.forEach(entries, function(entry) {
-    entry.vs = _.flatten(entry.vs.map(function(v) {
+  entries.forEach(function(entry) {
+    entry.vs = entry.vs.map(function(v) {
       if (subgraphs[v]) {
         return subgraphs[v].vs;
       }
       return v;
-    }), true);
+    }).reduce(function(r, e) { return r.concat(e); }, []);
   });
 }
 
 function mergeBarycenters(target, other) {
-  if (!_.isUndefined(target.barycenter)) {
+  if (target.barycenter !== undefined) {
     target.barycenter = (target.barycenter * target.weight +
                          other.barycenter * other.weight) /
                         (target.weight + other.weight);
@@ -1663,18 +1641,17 @@ function mergeBarycenters(target, other) {
   }
 }
 
-},{"../lodash":10,"./barycenter":14,"./resolve-conflicts":19,"./sort":21}],21:[function(require,module,exports){
-var _ = require("../lodash"),
-    util = require("../util");
+},{"./barycenter":13,"./resolve-conflicts":18,"./sort":20}],20:[function(require,module,exports){
+var util = require("../util");
 
 module.exports = sort;
 
 function sort(entries, biasRight) {
   var parts = util.partition(entries, function(entry) {
-    return _.has(entry, "barycenter");
+    return entry.hasOwnProperty("barycenter");
   });
   var sortable = parts.lhs,
-      unsortable = _.sortBy(parts.rhs, function(entry) { return -entry.i; }),
+      unsortable = parts.rhs.sort(function(a, b) { return b.i - a.i; }),
       vs = [],
       sum = 0,
       weight = 0,
@@ -1684,7 +1661,7 @@ function sort(entries, biasRight) {
 
   vsIndex = consumeUnsortable(vs, unsortable, vsIndex);
 
-  _.forEach(sortable, function (entry) {
+  sortable.forEach(function (entry) {
     vsIndex += entry.vs.length;
     vs.push(entry.vs);
     sum += entry.barycenter * entry.weight;
@@ -1692,7 +1669,7 @@ function sort(entries, biasRight) {
     vsIndex = consumeUnsortable(vs, unsortable, vsIndex);
   });
 
-  var result = { vs: _.flatten(vs, true) };
+  var result = { vs: vs.reduce(function(r, e) { return r.concat(e); }, []) };
   if (weight) {
     result.barycenter = sum / weight;
     result.weight = weight;
@@ -1702,7 +1679,7 @@ function sort(entries, biasRight) {
 
 function consumeUnsortable(vs, unsortable, index) {
   var last;
-  while (unsortable.length && (last = _.last(unsortable)).i <= index) {
+  while (unsortable.length && (last = unsortable[unsortable.length - 1]).i <= index) {
     unsortable.pop();
     vs.push(last.vs);
     index++;
@@ -1722,15 +1699,13 @@ function compareWithBias(bias) {
   };
 }
 
-},{"../lodash":10,"../util":29}],22:[function(require,module,exports){
-var _ = require("./lodash");
-
+},{"../util":28}],21:[function(require,module,exports){
 module.exports = parentDummyChains;
 
 function parentDummyChains(g) {
   var postorderNums = postorder(g);
 
-  _.forEach(g.graph().dummyChains, function(v) {
+  g.graph().dummyChains.forEach(function(v) {
     var node = g.node(v),
         edgeObj = node.edgeObj,
         pathData = findPath(g, postorderNums, edgeObj.v, edgeObj.w),
@@ -1802,19 +1777,18 @@ function postorder(g) {
 
   function dfs(v) {
     var low = lim;
-    _.forEach(g.children(v), dfs);
+    g.children(v).forEach(dfs);
     result[v] = { low: low, lim: lim++ };
   }
-  _.forEach(g.children(), dfs);
+  g.children().forEach(dfs);
 
   return result;
 }
 
-},{"./lodash":10}],23:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 "use strict";
 
-var _ = require("../lodash"),
-    Graph = require("../graphlib").Graph,
+var Graph = require("../graphlib").Graph,
     util = require("../util");
 
 /*
@@ -1864,15 +1838,15 @@ function findType1Conflicts(g, layering) {
       // segment.
       scanPos = 0,
       prevLayerLength = prevLayer.length,
-      lastNode = _.last(layer);
+      lastNode = layer[layer.length - 1];
 
-    _.forEach(layer, function(v, i) {
+    layer.forEach(function(v, i) {
       var w = findOtherInnerSegmentNode(g, v),
           k1 = w ? g.node(w).order : prevLayerLength;
 
       if (w || v === lastNode) {
-        _.forEach(layer.slice(scanPos, i +1), function(scanNode) {
-          _.forEach(g.predecessors(scanNode), function(u) {
+        layer.slice(scanPos, i +1).forEach(function(scanNode) {
+          g.predecessors(scanNode).forEach(function(u) {
             var uLabel = g.node(u),
                 uPos = uLabel.order;
             if ((uPos < k0 || k1 < uPos) &&
@@ -1889,7 +1863,7 @@ function findType1Conflicts(g, layering) {
     return layer;
   }
 
-  _.reduce(layering, visitLayer);
+  layering.reduce(visitLayer);
   return conflicts;
 }
 
@@ -1898,10 +1872,12 @@ function findType2Conflicts(g, layering) {
 
   function scan(south, southPos, southEnd, prevNorthBorder, nextNorthBorder) {
     var v;
-    _.forEach(_.range(southPos, southEnd), function(i) {
+    Array.apply(0, Array(southEnd - southPos)).map(function(v, i) {
+      return i + southPos;
+    }).forEach(function(i) {
       v = south[i];
       if (g.node(v).dummy) {
-        _.forEach(g.predecessors(v), function(u) {
+        g.predecessors(v).forEach(function(u) {
           var uNode = g.node(u);
           if (uNode.dummy &&
               (uNode.order < prevNorthBorder || uNode.order > nextNorthBorder)) {
@@ -1918,7 +1894,7 @@ function findType2Conflicts(g, layering) {
         nextNorthPos,
         southPos = 0;
 
-    _.forEach(south, function(v, southLookahead) {
+    south.forEach(function(v, southLookahead) {
       if (g.node(v).dummy === "border") {
         var predecessors = g.predecessors(v);
         if (predecessors.length) {
@@ -1934,15 +1910,18 @@ function findType2Conflicts(g, layering) {
     return south;
   }
 
-  _.reduce(layering, visitLayer);
+  layering.reduce(visitLayer);
+
   return conflicts;
 }
 
 function findOtherInnerSegmentNode(g, v) {
   if (g.node(v).dummy) {
-    return _.find(g.predecessors(v), function(u) {
-      return g.node(u).dummy;
-    });
+    // NOTE: we'd like to use Array.find, but not supported by IE
+    var predecessors = g.predecessors(v);
+    for (var i in predecessors) {
+      if (g.node(predecessors[i]).dummy) return predecessors[i];
+    }
   }
 }
 
@@ -1966,7 +1945,7 @@ function hasConflict(conflicts, v, w) {
     v = w;
     w = tmp;
   }
-  return _.has(conflicts[v], w);
+  return !!conflicts[v] && conflicts[v].hasOwnProperty(w);
 }
 
 /*
@@ -1985,20 +1964,21 @@ function verticalAlignment(g, layering, conflicts, neighborFn) {
   // We cache the position here based on the layering because the graph and
   // layering may be out of sync. The layering matrix is manipulated to
   // generate different extreme alignments.
-  _.forEach(layering, function(layer) {
-    _.forEach(layer, function(v, order) {
+  layering.forEach(function(layer) {
+    layer.forEach(function(v, order) {
       root[v] = v;
       align[v] = v;
       pos[v] = order;
     });
   });
 
-  _.forEach(layering, function(layer) {
+  layering.forEach(function(layer) {
     var prevIdx = -1;
-    _.forEach(layer, function(v) {
+    layer.forEach(function(v) {
       var ws = neighborFn(v);
       if (ws.length) {
-        ws = _.sortBy(ws, function(w) { return pos[w]; });
+        // ws = _.sortBy(ws, function(w) { return pos[w]; });
+        ws = ws.sort(function(a, b) { return pos[a] - pos[b]; });
         var mp = (ws.length - 1) / 2;
         for (var i = Math.floor(mp), il = Math.ceil(mp); i <= il; ++i) {
           var w = ws[i];
@@ -2067,7 +2047,8 @@ function horizontalCompaction(g, layering, root, align, reverseSep) {
   iterate(pass2, blockG.successors.bind(blockG));
 
   // Assign x coordinates to all nodes
-  _.forEach(align, function(v) {
+  Object.keys(align).forEach(function(k) {
+    var v = align[k];
     xs[v] = xs[root[v]];
   });
 
@@ -2080,9 +2061,9 @@ function buildBlockGraph(g, layering, root, reverseSep) {
       graphLabel = g.graph(),
       sepFn = sep(graphLabel.nodesep, graphLabel.edgesep, reverseSep);
 
-  _.forEach(layering, function(layer) {
+  layering.forEach(function(layer) {
     var u;
-    _.forEach(layer, function(v) {
+    layer.forEach(function(v) {
       var vRoot = root[v];
       blockGraph.setNode(vRoot);
       if (u) {
@@ -2101,11 +2082,12 @@ function buildBlockGraph(g, layering, root, reverseSep) {
  * Returns the alignment that has the smallest width of the given alignments.
  */
 function findSmallestWidthAlignment(g, xss) {
-  return _.minBy(_.values(xss), function (xs) {
+  function widthCalc(xs) {
     var max = Number.NEGATIVE_INFINITY;
     var min = Number.POSITIVE_INFINITY;
 
-    _.forIn(xs, function (x, v) {
+    Object.keys(xs).forEach(function(v) {
+      var x = xs[v];
       var halfWidth = width(g, v) / 2;
 
       max = Math.max(x + halfWidth, max);
@@ -2113,7 +2095,18 @@ function findSmallestWidthAlignment(g, xss) {
     });
 
     return max - min;
+  }
+
+  var minWidth = Number.POSITIVE_INFINITY;
+  var minKey;
+  Object.keys(xss).forEach(function(k) {
+    var width = widthCalc(xss[k]);
+    if (width < minWidth) {
+      minWidth = width;
+      minKey = k;
+    }
   });
+  return xss[minKey];
 }
 
 /*
@@ -2124,51 +2117,68 @@ function findSmallestWidthAlignment(g, xss) {
  * coordinate of the smallest width alignment.
  */
 function alignCoordinates(xss, alignTo) {
-  var alignToVals = _.values(alignTo),
-      alignToMin = _.min(alignToVals),
-      alignToMax = _.max(alignToVals);
+  // if alignTo isn't defined, whole function is a noop
+  if (!alignTo) return;
 
-  _.forEach(["u", "d"], function(vert) {
-    _.forEach(["l", "r"], function(horiz) {
+  var alignToVals = Object.keys(alignTo).map(function(k) { return alignTo[k]; });
+  var alignToMin = alignToVals.reduce(function(r, v) { return Math.min(r, v); }),
+      alignToMax = alignToVals.reduce(function(r, v) { return Math.max(r, v); });
+
+  ["u", "d"].forEach(function(vert) {
+    ["l", "r"].forEach(function(horiz) {
       var alignment = vert + horiz,
           xs = xss[alignment],
           delta;
       if (xs === alignTo) return;
 
-      var xsVals = _.values(xs);
-      delta = horiz === "l" ? alignToMin - _.min(xsVals) : alignToMax - _.max(xsVals);
+      var xsVals = Object.keys(xs).map(function(k) { return xs[k]; });
+      var minXsVals = xsVals.reduce(function(r, v) { return Math.min(r, v); });
+      var maxXsVals = xsVals.reduce(function(r, v) { return Math.max(r, v); });
+      delta = horiz === "l" ? alignToMin - minXsVals : alignToMax - maxXsVals;
 
       if (delta) {
-        xss[alignment] = _.mapValues(xs, function(x) { return x + delta; });
+        xss[alignment] = Object.keys(xs).reduce(function(r, k) {
+          r[k] = xs[k] + delta;
+          return r;
+        }, {});
       }
     });
   });
 }
 
 function balance(xss, align) {
-  return _.mapValues(xss.ul, function(ignore, v) {
+  return Object.keys(xss.ul).reduce(function(r, v) {
     if (align) {
-      return xss[align.toLowerCase()][v];
+      r[v] = xss[align.toLowerCase()][v];
     } else {
-      var xs = _.sortBy(_.map(xss, v));
-      return (xs[1] + xs[2]) / 2;
+      var xs = Object.keys(xss).map(function(k) { return xss[k][v]; })
+        .sort(function(a, b) { return a - b; });
+      r[v] = (xs[1] + xs[2]) / 2;
     }
-  });
+    return r;
+  }, {});
 }
 
 function positionX(g) {
   var layering = util.buildLayerMatrix(g),
-      conflicts = _.merge(findType1Conflicts(g, layering),
-                          findType2Conflicts(g, layering));
+    conflicts = [
+      findType1Conflicts(g, layering),
+      findType2Conflicts(g, layering)].reduce(function(r, o) {
+        Object.keys(o).forEach(function(k) {
+          r[k] = o[k];
+        });
+        return r;
+      }, {});
 
   var xss = {},
       adjustedLayering;
-  _.forEach(["u", "d"], function(vert) {
-    adjustedLayering = vert === "u" ? layering : _.values(layering).reverse();
-    _.forEach(["l", "r"], function(horiz) {
+  ["u", "d"].forEach(function(vert) {
+    adjustedLayering = vert === "u" ? layering :
+      Object.keys(layering).map(function(k) { return layering[k]; }).reverse();
+    ["l", "r"].forEach(function(horiz) {
       if (horiz === "r") {
-        adjustedLayering = _.map(adjustedLayering, function(inner) {
-          return _.values(inner).reverse();
+        adjustedLayering = adjustedLayering.map(function(inner) {
+          return Object.keys(inner).map(function(k) { return inner[k]; }).reverse();
         });
       }
 
@@ -2178,7 +2188,10 @@ function positionX(g) {
                                     align.root, align.align,
                                     horiz === "r");
       if (horiz === "r") {
-        xs = _.mapValues(xs, function(x) { return -x; });
+        xs = Object.keys(xs).reduce(function(r, k) {
+          r[k] = -xs[k];
+          return r;
+        }, {});
       }
       xss[vert + horiz] = xs;
     });
@@ -2197,7 +2210,7 @@ function sep(nodeSep, edgeSep, reverseSep) {
         delta;
 
     sum += vLabel.width / 2;
-    if (_.has(vLabel, "labelpos")) {
+    if (vLabel.hasOwnProperty("labelpos")) {
       switch (vLabel.labelpos.toLowerCase()) {
         case "l": delta = -vLabel.width / 2; break;
         case "r": delta = vLabel.width / 2; break;
@@ -2212,7 +2225,7 @@ function sep(nodeSep, edgeSep, reverseSep) {
     sum += (wLabel.dummy ? edgeSep : nodeSep) / 2;
 
     sum += wLabel.width / 2;
-    if (_.has(wLabel, "labelpos")) {
+    if (wLabel.hasOwnProperty("labelpos")) {
       switch (wLabel.labelpos.toLowerCase()) {
         case "l": delta = wLabel.width / 2; break;
         case "r": delta = -wLabel.width / 2; break;
@@ -2231,11 +2244,10 @@ function width(g, v) {
   return g.node(v).width;
 }
 
-},{"../graphlib":7,"../lodash":10,"../util":29}],24:[function(require,module,exports){
+},{"../graphlib":7,"../util":28}],23:[function(require,module,exports){
 "use strict";
 
-var _ = require("../lodash"),
-    util = require("../util"),
+var util = require("../util"),
     positionX = require("./bk").positionX;
 
 module.exports = position;
@@ -2244,7 +2256,10 @@ function position(g) {
   g = util.asNonCompoundGraph(g);
 
   positionY(g);
-  _.forEach(positionX(g), function(x, v) {
+
+  var posX = positionX(g);
+  Object.keys(posX).forEach(function(v) {
+    var x = posX[v];
     g.node(v).x = x;
   });
 }
@@ -2253,9 +2268,10 @@ function positionY(g) {
   var layering = util.buildLayerMatrix(g),
       rankSep = g.graph().ranksep,
       prevY = 0;
-  _.forEach(layering, function(layer) {
-    var maxHeight = _.max(_.map(layer, function(v) { return g.node(v).height; }));
-    _.forEach(layer, function(v) {
+  layering.forEach(function(layer) {
+    var maxHeight = layer.map(function(v) { return g.node(v).height; })
+      .reduce(function(r, v) { return Math.max(r, v); });
+    layer.forEach(function(v) {
       g.node(v).y = prevY + maxHeight / 2;
     });
     prevY += maxHeight + rankSep;
@@ -2263,11 +2279,10 @@ function positionY(g) {
 }
 
 
-},{"../lodash":10,"../util":29,"./bk":23}],25:[function(require,module,exports){
+},{"../util":28,"./bk":22}],24:[function(require,module,exports){
 "use strict";
 
-var _ = require("../lodash"),
-    Graph = require("../graphlib").Graph,
+var Graph = require("../graphlib").Graph,
     slack = require("./util").slack;
 
 module.exports = feasibleTree;
@@ -2321,7 +2336,7 @@ function feasibleTree(g) {
  */
 function tightTree(t, g) {
   function dfs(v) {
-    _.forEach(g.nodeEdges(v), function(e) {
+    g.nodeEdges(v).forEach(function(e) {
       var edgeV = e.v,
           w = (v === edgeV) ? e.w : edgeV;
       if (!t.hasNode(w) && !slack(g, e)) {
@@ -2332,7 +2347,7 @@ function tightTree(t, g) {
     });
   }
 
-  _.forEach(t.nodes(), dfs);
+  t.nodes().forEach(dfs);
   return t.nodeCount();
 }
 
@@ -2341,20 +2356,27 @@ function tightTree(t, g) {
  * it.
  */
 function findMinSlackEdge(t, g) {
-  return _.minBy(g.edges(), function(e) {
+  var minSlack = Number.POSITIVE_INFINITY;
+  var minEdge;
+  g.edges().forEach(function(e) {
     if (t.hasNode(e.v) !== t.hasNode(e.w)) {
-      return slack(g, e);
+      var edgeSlack = slack(g, e);
+      if (edgeSlack < minSlack) {
+        minSlack = edgeSlack;
+        minEdge = e;
+      }
     }
   });
+  return minEdge;
 }
 
 function shiftRanks(t, g, delta) {
-  _.forEach(t.nodes(), function(v) {
+  t.nodes().forEach(function(v) {
     g.node(v).rank += delta;
   });
 }
 
-},{"../graphlib":7,"../lodash":10,"./util":28}],26:[function(require,module,exports){
+},{"../graphlib":7,"./util":27}],25:[function(require,module,exports){
 "use strict";
 
 var rankUtil = require("./util"),
@@ -2404,11 +2426,10 @@ function networkSimplexRanker(g) {
   networkSimplex(g);
 }
 
-},{"./feasible-tree":25,"./network-simplex":27,"./util":28}],27:[function(require,module,exports){
+},{"./feasible-tree":24,"./network-simplex":26,"./util":27}],26:[function(require,module,exports){
 "use strict";
 
-var _ = require("../lodash"),
-    feasibleTree = require("./feasible-tree"),
+var feasibleTree = require("./feasible-tree"),
     slack = require("./util").slack,
     initRank = require("./util").longestPath,
     preorder = require("../graphlib").alg.preorder,
@@ -2478,7 +2499,7 @@ function networkSimplex(g) {
 function initCutValues(t, g) {
   var vs = postorder(t, t.nodes());
   vs = vs.slice(0, vs.length - 1);
-  _.forEach(vs, function(v) {
+  vs.forEach(function(v) {
     assignCutValue(t, g, v);
   });
 }
@@ -2510,7 +2531,7 @@ function calcCutValue(t, g, child) {
 
   cutValue = graphEdge.weight;
 
-  _.forEach(g.nodeEdges(child), function(e) {
+  g.nodeEdges(child).forEach(function(e) {
     var isOutEdge = e.v === child,
         other = isOutEdge ? e.w : e.v;
 
@@ -2541,8 +2562,8 @@ function dfsAssignLowLim(tree, visited, nextLim, v, parent) {
       label = tree.node(v);
 
   visited[v] = true;
-  _.forEach(tree.neighbors(v), function(w) {
-    if (!_.has(visited, w)) {
+  tree.neighbors(v).forEach(function(w) {
+    if (!visited.hasOwnProperty(w)) {
       nextLim = dfsAssignLowLim(tree, visited, nextLim, w, v);
     }
   });
@@ -2560,9 +2581,10 @@ function dfsAssignLowLim(tree, visited, nextLim, v, parent) {
 }
 
 function leaveEdge(tree) {
-  return _.find(tree.edges(), function(e) {
+  // NOTE: we want to use find, but not supported by ie
+  return tree.edges().filter(function(e) {
     return tree.edge(e).cutvalue < 0;
-  });
+  })[0];
 }
 
 function enterEdge(t, g, edge) {
@@ -2589,12 +2611,21 @@ function enterEdge(t, g, edge) {
     flip = true;
   }
 
-  var candidates = _.filter(g.edges(), function(edge) {
+  var candidates = g.edges().filter(function(edge) {
     return flip === isDescendant(t, t.node(edge.v), tailLabel) &&
            flip !== isDescendant(t, t.node(edge.w), tailLabel);
   });
 
-  return _.minBy(candidates, function(edge) { return slack(g, edge); });
+  var minSlack = Number.POSITIVE_INFINITY;
+  var minKey;
+  candidates.forEach(function(edge, i) {
+    var edgeSlack = slack(g, edge);
+    if (edgeSlack < minSlack) {
+      minSlack = edgeSlack;
+      minKey = i;
+    }
+  });
+  return candidates[minKey];
 }
 
 function exchangeEdges(t, g, e, f) {
@@ -2608,10 +2639,11 @@ function exchangeEdges(t, g, e, f) {
 }
 
 function updateRanks(t, g) {
-  var root = _.find(t.nodes(), function(v) { return !g.node(v).parent; }),
+  // NOTE: we'd like to use find, but not supported by ie
+  var root = t.nodes().filter(function(v) { return !g.node(v).parent; })[0],
       vs = preorder(t, root);
   vs = vs.slice(1);
-  _.forEach(vs, function(v) {
+  vs.forEach(function(v) {
     var parent = t.node(v).parent,
         edge = g.edge(v, parent),
         flipped = false;
@@ -2640,10 +2672,8 @@ function isDescendant(tree, vLabel, rootLabel) {
   return rootLabel.low <= vLabel.lim && vLabel.lim <= rootLabel.lim;
 }
 
-},{"../graphlib":7,"../lodash":10,"../util":29,"./feasible-tree":25,"./util":28}],28:[function(require,module,exports){
+},{"../graphlib":7,"../util":28,"./feasible-tree":24,"./util":27}],27:[function(require,module,exports){
 "use strict";
-
-var _ = require("../lodash");
 
 module.exports = {
   longestPath: longestPath,
@@ -2676,25 +2706,19 @@ function longestPath(g) {
 
   function dfs(v) {
     var label = g.node(v);
-    if (_.has(visited, v)) {
+    if (visited.hasOwnProperty(v)) {
       return label.rank;
     }
     visited[v] = true;
 
-    var rank = _.min(_.map(g.outEdges(v), function(e) {
+    var rank = g.outEdges(v).length ? g.outEdges(v).map(function(e) {
       return dfs(e.w) - g.edge(e).minlen;
-    }));
-
-    if (rank === Number.POSITIVE_INFINITY || // return value of _.map([]) for Lodash 3
-        rank === undefined || // return value of _.map([]) for Lodash 4
-        rank === null) { // return value of _.map([null])
-      rank = 0;
-    }
+    }).reduce(function(r, v) { return Math.min(r, v); }) : 0;
 
     return (label.rank = rank);
   }
 
-  _.forEach(g.sources(), dfs);
+  g.sources().forEach(dfs);
 }
 
 /*
@@ -2705,11 +2729,10 @@ function slack(g, e) {
   return g.node(e.w).rank - g.node(e.v).rank - g.edge(e).minlen;
 }
 
-},{"../lodash":10}],29:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 "use strict";
 
-var _ = require("./lodash"),
-    Graph = require("./graphlib").Graph;
+var Graph = require("./graphlib").Graph;
 
 module.exports = {
   addDummyNode: addDummyNode,
@@ -2731,10 +2754,11 @@ module.exports = {
 /*
  * Adds a dummy node to the graph and return v.
  */
+var uniqueNodeId = 100;
 function addDummyNode(g, type, attrs, name) {
   var v;
   do {
-    v = _.uniqueId(name);
+    v = name + uniqueNodeId++;
   } while (g.hasNode(v));
 
   attrs.dummy = type;
@@ -2748,8 +2772,8 @@ function addDummyNode(g, type, attrs, name) {
  */
 function simplify(g) {
   var simplified = new Graph().setGraph(g.graph());
-  _.forEach(g.nodes(), function(v) { simplified.setNode(v, g.node(v)); });
-  _.forEach(g.edges(), function(e) {
+  g.nodes().forEach(function(v) { simplified.setNode(v, g.node(v)); });
+  g.edges().forEach(function(e) {
     var simpleLabel = simplified.edge(e.v, e.w) || { weight: 0, minlen: 1 },
         label = g.edge(e);
     simplified.setEdge(e.v, e.w, {
@@ -2762,37 +2786,43 @@ function simplify(g) {
 
 function asNonCompoundGraph(g) {
   var simplified = new Graph({ multigraph: g.isMultigraph() }).setGraph(g.graph());
-  _.forEach(g.nodes(), function(v) {
+  g.nodes().forEach(function(v) {
     if (!g.children(v).length) {
       simplified.setNode(v, g.node(v));
     }
   });
-  _.forEach(g.edges(), function(e) {
+  g.edges().forEach(function(e) {
     simplified.setEdge(e, g.edge(e));
   });
   return simplified;
 }
 
 function successorWeights(g) {
-  var weightMap = _.map(g.nodes(), function(v) {
+  var weightMap = g.nodes().map(function(v) {
     var sucs = {};
-    _.forEach(g.outEdges(v), function(e) {
+    g.outEdges(v).forEach(function(e) {
       sucs[e.w] = (sucs[e.w] || 0) + g.edge(e).weight;
     });
     return sucs;
   });
-  return _.zipObject(g.nodes(), weightMap);
+  return g.nodes().reduce(function(r, v, i) {
+    r[v] = weightMap[i];
+    return r;
+  }, {});
 }
 
 function predecessorWeights(g) {
-  var weightMap = _.map(g.nodes(), function(v) {
+  var weightMap = g.nodes().map(function(v) {
     var preds = {};
-    _.forEach(g.inEdges(v), function(e) {
+    g.inEdges(v).forEach(function(e) {
       preds[e.v] = (preds[e.v] || 0) + g.edge(e).weight;
     });
     return preds;
   });
-  return _.zipObject(g.nodes(), weightMap);
+  return g.nodes().reduce(function(r, v, i) {
+    r[v] = weightMap[i];
+    return r;
+  }, {});
 }
 
 /*
@@ -2839,11 +2869,12 @@ function intersectRect(rect, point) {
  * function will produce a matrix with the ids of each node.
  */
 function buildLayerMatrix(g) {
-  var layering = _.map(_.range(maxRank(g) + 1), function() { return []; });
-  _.forEach(g.nodes(), function(v) {
+  var layering = Array.apply(0, Array(maxRank(g) + 1)).map(function() { return []; });
+
+  g.nodes().forEach(function(v) {
     var node = g.node(v),
         rank = node.rank;
-    if (!_.isUndefined(rank)) {
+    if (rank !== undefined) {
       layering[rank][node.order] = v;
     }
   });
@@ -2855,10 +2886,15 @@ function buildLayerMatrix(g) {
  * rank(v) >= 0 and at least one node w has rank(w) = 0.
  */
 function normalizeRanks(g) {
-  var min = _.min(_.map(g.nodes(), function(v) { return g.node(v).rank; }));
-  _.forEach(g.nodes(), function(v) {
+  var min = g.nodes()
+    .map(function(v) { return g.node(v); })
+    .filter(function(node) { return node.hasOwnProperty("rank"); })
+    .map(function(node) { return node.rank; })
+    .reduce(function(r, v) { return Math.min(r, v); });
+
+  g.nodes().forEach(function(v) {
     var node = g.node(v);
-    if (_.has(node, "rank")) {
+    if (node.hasOwnProperty("rank")) {
       node.rank -= min;
     }
   });
@@ -2866,10 +2902,11 @@ function normalizeRanks(g) {
 
 function removeEmptyRanks(g) {
   // Ranks may not start at 0, so we need to offset them
-  var offset = _.min(_.map(g.nodes(), function(v) { return g.node(v).rank; }));
+  var offset = g.nodes().map(function(v) { return g.node(v).rank; })
+    .reduce(function(r, v) { return Math.min(r,v); });
 
   var layers = [];
-  _.forEach(g.nodes(), function(v) {
+  g.nodes().forEach(function(v) {
     var rank = g.node(v).rank - offset;
     if (!layers[rank]) {
       layers[rank] = [];
@@ -2879,13 +2916,18 @@ function removeEmptyRanks(g) {
 
   var delta = 0,
       nodeRankFactor = g.graph().nodeRankFactor;
-  _.forEach(layers, function(vs, i) {
-    if (_.isUndefined(vs) && i % nodeRankFactor !== 0) {
+  function incNodeRank(v) { g.node(v).rank += delta; }
+  // We use a for loop rather than forEach due to need to iterate over
+  // undefined items in the list
+  for (var i = 0; i < layers.length; i++) {
+    var vs = layers[i];
+    if (vs === undefined && i % nodeRankFactor !== 0) {
       --delta;
-    } else if (delta) {
-      _.forEach(vs, function(v) { g.node(v).rank += delta; });
+    } else if (delta && vs) {
+      // vs.forEach(function(v) { g.node(v).rank += delta; });
+      vs.forEach(incNodeRank);
     }
-  });
+  }
 }
 
 function addBorderNode(g, prefix, rank, order) {
@@ -2901,12 +2943,12 @@ function addBorderNode(g, prefix, rank, order) {
 }
 
 function maxRank(g) {
-  return _.max(_.map(g.nodes(), function(v) {
-    var rank = g.node(v).rank;
-    if (!_.isUndefined(rank)) {
-      return rank;
-    }
-  }));
+  return g.nodes()
+    .filter(function(v) {
+      return g.node(v).hasOwnProperty("rank");
+    }).map(function(v) {
+      return g.node(v).rank;
+    }).reduce(function(r, v) { return Math.max(r, v); });
 }
 
 /*
@@ -2916,7 +2958,7 @@ function maxRank(g) {
  */
 function partition(collection, fn) {
   var result = { lhs: [], rhs: [] };
-  _.forEach(collection, function(value) {
+  collection.forEach(function(value) {
     if (fn(value)) {
       result.lhs.push(value);
     } else {
@@ -2931,11 +2973,11 @@ function partition(collection, fn) {
  * time it takes to execute the function.
  */
 function time(name, fn) {
-  var start = _.now();
+  var start = Date.now();
   try {
     return fn();
   } finally {
-    console.log(name + " time: " + (_.now() - start) + "ms");
+    console.log(name + " time: " + (Date.now() - start) + "ms");
   }
 }
 
@@ -2943,7 +2985,7 @@ function notime(name, fn) {
   return fn();
 }
 
-},{"./graphlib":7,"./lodash":10}],30:[function(require,module,exports){
+},{"./graphlib":7}],29:[function(require,module,exports){
 module.exports = "0.8.3-pre";
 
 },{}]},{},[1])(1)
